@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -8,8 +9,7 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { throwError } from 'rxjs';
-import { log, time } from 'console';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -35,7 +35,14 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto) {
-    const user = this.usersRepo.create(createUserDto);
+    await this.findUserNme(createUserDto.userName);
+
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+    const user = this.usersRepo.create({
+      ...createUserDto,
+      password: hashedPassword,
+    });
     return await this.usersRepo.save(user);
   }
 
